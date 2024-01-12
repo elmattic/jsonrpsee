@@ -147,7 +147,10 @@ impl SubscriptionMessage {
 		Ok(Self::from_complete_message(json))
 	}
 
-	pub(crate) fn from_complete_message(msg: String) -> Self {
+	/// Create a new subscription message.
+	///
+	/// This can be handy to adapt to different `pubsub` specifications.
+	pub fn from_complete_message(msg: String) -> Self {
 		SubscriptionMessage(SubscriptionMessageInner::Complete(msg))
 	}
 
