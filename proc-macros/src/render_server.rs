@@ -194,7 +194,7 @@ impl RpcDescription {
 					})
 				} else {
 					handle_register_result(quote! {
-						rpc.register_subscription_raw(#rpc_sub_name, #rpc_notif_name, #rpc_unsub_name, |params, mut pending, context| {
+						rpc.register_subscription_raw(#rpc_sub_name, #rpc_notif_name, #rpc_unsub_name, false, |params, mut pending, context| {
 							#parsing
 							let _ = context.as_ref().#rust_method_name(pending, #params_seq);
 							#sub_err::None

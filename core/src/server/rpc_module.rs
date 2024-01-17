@@ -770,7 +770,7 @@ impl<Context: Send + Sync + 'static> RpcModule<Context> {
 	/// use jsonrpsee_types::ErrorObjectOwned;
 	///
 	/// let mut ctx = RpcModule::new(99_usize);
-	/// ctx.register_subscription_raw("sub", "notif_name", "unsub", |params, pending, ctx| {
+	/// ctx.register_subscription_raw("sub", "notif_name", "unsub", false, |params, pending, ctx| {
 	///
 	///     // The params are parsed outside the async block below to avoid cloning the bytes.
 	///     let val = match params.one::<usize>() {
