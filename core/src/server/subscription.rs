@@ -47,9 +47,6 @@ pub type Subscribers = Arc<Mutex<FxHashMap<SubscriptionKey, (MethodSink, mpsc::R
 /// Subscription permit.
 pub type SubscriptionPermit = OwnedSemaphorePermit;
 
-/// Type-alias for a `SubscriptionId` store. This is needed to support Filecoin `pubsub`.
-pub type SubIdStore = Arc<Mutex<FxHashMap<(usize, String), SubscriptionId<'static>>>>;
-
 /// Convert something into a subscription close notification
 /// before a subscription is terminated.
 pub trait IntoSubscriptionCloseResponse {
@@ -256,7 +253,7 @@ pub struct PendingSubscriptionSink {
 	pub(crate) permit: OwnedSemaphorePermit,
 
 	/// For Filecoin `pubsub`
-	pub(crate) sub_id_store: SubIdStore,
+	pub(crate) channel_id: Option<SubscriptionId<'static>>,
 }
 
 impl PendingSubscriptionSink {
@@ -280,9 +277,10 @@ impl PendingSubscriptionSink {
 	///
 	/// Panics if the subscription response exceeded the `max_response_size`.
 	pub async fn accept(self) -> Result<SubscriptionSink, PendingSubscriptionAcceptError> {
+		let sub_id = self.subscription_id();
 		let response = MethodResponse::subscription_response(
 			self.id,
-			ResponsePayload::result_borrowed(&self.uniq_sub.sub_id),
+			ResponsePayload::result_borrowed(&sub_id),
 			self.inner.max_response_size() as usize,
 		);
 		let success = response.is_success();
@@ -306,6 +304,7 @@ impl PendingSubscriptionSink {
 				uniq_sub: self.uniq_sub,
 				unsubscribe: IsUnsubscribed(tx),
 				_permit: Arc::new(self.permit),
+				channel_id: self.channel_id.clone(),
 			})
 		} else {
 			panic!("The subscription response was too big; adjust the `max_response_size` or change Subscription ID generation");
@@ -315,6 +314,16 @@ impl PendingSubscriptionSink {
 	/// Returns connection identifier, which was used to perform pending subscription request
 	pub fn connection_id(&self) -> ConnectionId {
 		self.uniq_sub.conn_id
+	}
+
+	/// Returns the subscription identifier
+	pub fn subscription_id<'a>(&self) -> SubscriptionId<'a> {
+		// TODO: document
+		if let Some(sub_id) = self.channel_id.clone() {
+			sub_id
+		} else {
+			self.uniq_sub.sub_id.clone()
+		}
 	}
 }
 
@@ -333,6 +342,9 @@ pub struct SubscriptionSink {
 	unsubscribe: IsUnsubscribed,
 	/// Subscription permit
 	_permit: Arc<SubscriptionPermit>,
+
+	/// Optional channel ID for Filecoin `pubsub`.
+	channel_id: Option<SubscriptionId<'static>>,
 }
 
 impl SubscriptionSink {
@@ -351,6 +363,11 @@ impl SubscriptionSink {
 		self.uniq_sub.conn_id
 	}
 
+	/// Get the channel ID if some.
+	pub fn channel_id(&self) -> Option<SubscriptionId<'static>> {
+		self.channel_id.clone()
+	}
+
 	/// Send out a response on the subscription and wait until there is capacity.
 	///
 	///
@@ -367,7 +384,7 @@ impl SubscriptionSink {
 			return Err(DisconnectError(msg));
 		}
 
-		let json = sub_message_to_json(msg, SubNotifResultOrError::Result, &self.uniq_sub.sub_id, self.method);
+		let json = sub_message_to_json(msg, SubNotifResultOrError::Result, &self.subscription_id(), self.method);
 		self.inner.send(json).await.map_err(Into::into)
 	}
 
@@ -378,7 +395,7 @@ impl SubscriptionSink {
 			return Err(SendTimeoutError::Closed(msg));
 		}
 
-		let json = sub_message_to_json(msg, SubNotifResultOrError::Result, &self.uniq_sub.sub_id, self.method);
+		let json = sub_message_to_json(msg, SubNotifResultOrError::Result, &self.subscription_id(), self.method);
 		self.inner.send_timeout(json, timeout).await.map_err(Into::into)
 	}
 
