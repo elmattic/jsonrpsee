@@ -47,6 +47,9 @@ pub type Subscribers = Arc<Mutex<FxHashMap<SubscriptionKey, (MethodSink, mpsc::R
 /// Subscription permit.
 pub type SubscriptionPermit = OwnedSemaphorePermit;
 
+/// Type-alias for a `SubscriptionId` store. This is needed to support Filecoin `pubsub`.
+pub type SubIdStore = Arc<Mutex<FxHashMap<(usize, String), SubscriptionId<'static>>>>;
+
 /// Convert something into a subscription close notification
 /// before a subscription is terminated.
 pub trait IntoSubscriptionCloseResponse {
@@ -251,6 +254,9 @@ pub struct PendingSubscriptionSink {
 	pub(crate) subscribe: oneshot::Sender<MethodResponse>,
 	/// Subscription permit.
 	pub(crate) permit: OwnedSemaphorePermit,
+
+	/// For Filecoin `pubsub`
+	pub(crate) sub_id_store: SubIdStore,
 }
 
 impl PendingSubscriptionSink {
