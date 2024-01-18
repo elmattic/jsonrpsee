@@ -852,8 +852,7 @@ impl<Context: Send + Sync + 'static> RpcModule<Context> {
 						id: id.clone().into_owned(),
 						subscribe: tx,
 						permit: conn.subscription_permit,
-						// TODO: generate a unique channel ID
-						channel_id: if fil_pubsub { Some(RpcSubscriptionId::Num(666)) } else { None },
+						channel_id: if fil_pubsub { Some(conn.id_provider.next_id()) } else { None },
 					};
 
 					callback(params, sink, ctx.clone());
