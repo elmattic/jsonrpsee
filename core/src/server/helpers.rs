@@ -30,7 +30,7 @@ use std::time::Duration;
 use jsonrpsee_types::error::{
 	reject_too_big_batch_response, ErrorCode, ErrorObject, OVERSIZED_RESPONSE_CODE, OVERSIZED_RESPONSE_MSG,
 };
-use jsonrpsee_types::{Id, InvalidRequest, Response, ResponsePayload};
+use jsonrpsee_types::{Id, InvalidRequest, Response, ResponsePayload, SubscriptionId};
 use serde::Serialize;
 use serde_json::value::to_raw_value;
 use tokio::sync::mpsc;
@@ -313,6 +313,18 @@ impl MethodResponse {
 		let err = ResponsePayload::error_borrowed(err);
 		let result = serde_json::to_string(&Response::new(err, id)).expect("JSON serialization infallible; qed");
 		Self { result, success_or_error: MethodResponseResult::Failed(err_code), is_subscription: false }
+	}
+
+	/// Create a close channel method response. This is specific to Filecoin `pubsub`.
+	pub fn close_channel_response(channel_id: SubscriptionId) -> Self
+	{
+		let channel_str = serde_json::to_string(&channel_id).expect("JSON serialization infallible; qed");
+		let msg = format!(r#"{{"jsonrpc":"2.0","method":"xrpc.ch.close","params":[{channel_str}]}}"#,);
+		MethodResponse {
+			result: msg,
+			success_or_error: MethodResponseResult::Success,
+			is_subscription: false,
+		}
 	}
 }
 

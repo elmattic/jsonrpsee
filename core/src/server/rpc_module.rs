@@ -678,7 +678,7 @@ impl<Context: Send + Sync + 'static> RpcModule<Context> {
 		Fut: Future<Output = R> + Send + 'static,
 		R: IntoSubscriptionCloseResponse + Send,
 	{
-		let subscribers = self.verify_and_register_unsubscribe(subscribe_method_name, unsubscribe_method_name)?;
+		let subscribers = self.verify_and_register_unsubscribe(subscribe_method_name, unsubscribe_method_name, false)?;
 		let ctx = self.ctx.clone();
 
 		// Subscribe
@@ -813,7 +813,7 @@ impl<Context: Send + Sync + 'static> RpcModule<Context> {
 		F: (Fn(Params, PendingSubscriptionSink, Arc<Context>) -> R) + Send + Sync + Clone + 'static,
 		R: IntoSubscriptionCloseResponse,
 	{
-		let subscribers = self.verify_and_register_unsubscribe(subscribe_method_name, unsubscribe_method_name)?;
+		let subscribers = self.verify_and_register_unsubscribe(subscribe_method_name, unsubscribe_method_name, fil_pubsub)?;
 		let ctx = self.ctx.clone();
 
 		// Subscribe
@@ -879,6 +879,7 @@ impl<Context: Send + Sync + 'static> RpcModule<Context> {
 		&mut self,
 		subscribe_method_name: &'static str,
 		unsubscribe_method_name: &'static str,
+		fil_pubsub: bool,
 	) -> Result<Subscribers, RegisterMethodError> {
 		if subscribe_method_name == unsubscribe_method_name {
 			return Err(RegisterMethodError::SubscriptionNameConflict(subscribe_method_name.into()));
@@ -913,7 +914,8 @@ impl<Context: Send + Sync + 'static> RpcModule<Context> {
 					};
 
 					let key = SubscriptionKey { conn_id, sub_id: sub_id.into_owned() };
-					let result = subscribers.lock().remove(&key).is_some();
+					let option = subscribers.lock().remove(&key);
+					let result = option.is_some();
 
 					if !result {
 						tracing::debug!(
@@ -924,7 +926,16 @@ impl<Context: Send + Sync + 'static> RpcModule<Context> {
 						);
 					}
 
-					MethodResponse::response(id, ResponsePayload::result(result), max_response_size)
+					if fil_pubsub {
+						let channel_id_opt = if let Some((_,_,id)) = option { id } else { None };
+						if let Some(channel_id) = channel_id_opt {
+							MethodResponse::close_channel_response(channel_id)
+						} else {
+							MethodResponse::error(id, ErrorCode::InternalError)
+						}
+					} else {
+						MethodResponse::response(id, ResponsePayload::result(result), max_response_size)
+					}
 					
 				})),
 			);

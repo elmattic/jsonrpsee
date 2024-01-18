@@ -43,7 +43,7 @@ use std::{sync::Arc, time::Duration};
 use tokio::sync::{mpsc, oneshot, OwnedSemaphorePermit, Semaphore};
 
 /// Type-alias for subscribers.
-pub type Subscribers = Arc<Mutex<FxHashMap<SubscriptionKey, (MethodSink, mpsc::Receiver<()>)>>>;
+pub type Subscribers = Arc<Mutex<FxHashMap<SubscriptionKey, (MethodSink, mpsc::Receiver<()>, Option<SubscriptionId<'static>>)>>>;
 /// Subscription permit.
 pub type SubscriptionPermit = OwnedSemaphorePermit;
 
@@ -296,7 +296,7 @@ impl PendingSubscriptionSink {
 
 		if success {
 			let (tx, rx) = mpsc::channel(1);
-			self.subscribers.lock().insert(self.uniq_sub.clone(), (self.inner.clone(), rx));
+			self.subscribers.lock().insert(self.uniq_sub.clone(), (self.inner.clone(), rx, self.channel_id.clone()));
 			Ok(SubscriptionSink {
 				inner: self.inner,
 				method: self.method,
