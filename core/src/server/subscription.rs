@@ -125,7 +125,7 @@ pub enum SubscriptionMessageInner {
 
 /// Subscription message.
 #[derive(Debug, Clone)]
-pub struct SubscriptionMessage(pub(crate) SubscriptionMessageInner);
+pub struct SubscriptionMessage(pub SubscriptionMessageInner);
 
 impl SubscriptionMessage {
 	/// Create a new subscription message from JSON.
