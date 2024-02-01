@@ -147,6 +147,7 @@ impl SubscriptionMessage {
 		Ok(Self::from_complete_message(json))
 	}
 
+	/// Create a new subscription message from a user-provided JSON string.
 	pub fn from_complete_message(msg: String) -> Self {
 		SubscriptionMessage(SubscriptionMessageInner::Complete(msg))
 	}
