@@ -27,7 +27,7 @@
 //! Shared modules for the JSON-RPC servers.
 
 /// Error types.
-mod error;
+pub mod error;
 /// Helpers.
 pub mod helpers;
 /// JSON-RPC "modules" group sets of methods that belong together and handles method/subscription registration.

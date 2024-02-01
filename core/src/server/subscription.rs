@@ -125,7 +125,7 @@ pub enum SubscriptionMessageInner {
 
 /// Subscription message.
 #[derive(Debug, Clone)]
-pub struct SubscriptionMessage(pub(crate) SubscriptionMessageInner);
+pub struct SubscriptionMessage(pub SubscriptionMessageInner);
 
 impl SubscriptionMessage {
 	/// Create a new subscription message from JSON.
@@ -147,7 +147,7 @@ impl SubscriptionMessage {
 		Ok(Self::from_complete_message(json))
 	}
 
-	pub(crate) fn from_complete_message(msg: String) -> Self {
+	pub fn from_complete_message(msg: String) -> Self {
 		SubscriptionMessage(SubscriptionMessageInner::Complete(msg))
 	}
 
