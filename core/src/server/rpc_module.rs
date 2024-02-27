@@ -227,7 +227,7 @@ impl Methods {
 	}
 
 	/// Helper for obtaining a mut ref to the callbacks HashMap.
-	pub fn mut_callbacks(&mut self) -> &mut FxHashMap<&'static str, MethodCallback> {
+	fn mut_callbacks(&mut self) -> &mut FxHashMap<&'static str, MethodCallback> {
 		Arc::make_mut(&mut self.callbacks)
 	}
 
